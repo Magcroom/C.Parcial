@@ -1,236 +1,318 @@
-from machine import Pin as pin,ADC,I2C
-from utime import sleep_ms
+from machine import Pin, ADC, I2C
 from ssd1306 import SSD1306_I2C
-import framebuf
+from utime import sleep_ms,sleep
+import random
 
-color = 1
+Cx=0
+Cy=0
+K=0
+click=0
+posO=[1,2,3,4,5,6,7,8,9]
 
-sensorx = ADC(pin(32))   # pines usados el 35,34,33,36, 39 , 32, 
-sensory = ADC(pin(33))   # pines usados el 35,34,33,36, 39 , 32, 
+ancho=128
+alto=64
+ejex= ADC(Pin(32))
+ejex.atten(ADC.ATTN_11DB)
+ejex.width(ADC.WIDTH_12BIT)
 
-sensorx.atten(ADC.ATTN_11DB)   # para calibrar de 0 a 3.6v
-sensorx.width(ADC.WIDTH_12BIT) # establecer resolución
-sensory.atten(ADC.ATTN_11DB)   # para calibrar de 0 a 3.6v
-sensory.width(ADC.WIDTH_12BIT) # establecer resolución
+boton1=Pin(13,Pin.IN,Pin.PULL_UP)
 
+ejey= ADC(Pin(33))
+ejey.atten(ADC.ATTN_11DB)
+ejey.width(ADC.WIDTH_12BIT)
 
-ancho = 128
-alto = 64
-i2c = I2C(0, scl=pin(22), sda=pin(23))
+i2c = I2C(0, scl=Pin(22), sda=Pin(23)) 
 oled = SSD1306_I2C(ancho, alto, i2c)
-# print(i2c.scan())
 
-boton = pin(13,pin.IN, pin.PULL_UP)
-led = pin(2,pin.OUT)
+def seleccionar(Cx, Cy, K): 
+    if(Cx==0 and Cy==0):
+        oled.text("! !", 15, 15, 1)
+        K=1
+    else:
+        oled.text(" ", 15, 15, 1)
 
-movimientoX = 16
-movimientoY = 15
+    if(Cx==1 and Cy==0):
+        oled.text("! !", 50, 15, 10)
+        K=2
+    else:
+        oled.text(" ", 50, 15, 10)
 
-modulo = 2
-a = 0
-b = 0
+    if(Cx==2 and Cy==0):
+        oled.text("! !", 85, 15, 10)
+        K=3
+    else:
+        oled.text(" ", 85, 15, 10)
 
-for i in range(5):
-        print("Turno del jugador 1 - X")
-        valor="X"
-        #empiezan a jugar - Jugador1
-        jugada(valor)
-        huboGanador()
-        if ganador != "X" and i < 4 :
-            for j in range(3):
-                print("Turno del jugador 2 - O")
-                valor="O"
-                jugada(valor)
-                huboGanador()
-                if ganador == "O":
-                    print("Felicadadesss!!! Jugador 2 GANADOR del TA-TE-TI")
-                break
-        elif ganador=="X":
-            print("Felicadadesss!!! Jugador 1 GANADOR del TA-TE-TI")
-            break
-        else:
-            print("Empataron del TA-TE-TI")
-def huboGanador():
-    global ganador
-    controlLinea()
-    controlVertical()
-    controlDiagonal()
-def controlLinea():
-    global ganador
-    if tablero[0]== tablero[1]==tablero[2] !="-":
-        ganador = tablero[0]
-    elif tablero[3] ==  tablero[4] == tablero[5] != "-":
-        ganador = tablero[3]
-    elif tablero[6] ==  tablero[7] == tablero[8] != "-":
-        ganador = tablero[6]
-def controlVertical():
-    global ganador
-    if tablero[0] ==  tablero[3] == tablero[6] != "-":
-        ganador = tablero[0]
-    elif tablero[1] ==  tablero[4] == tablero[7] != "-":
-        ganador = tablero[1]
-    elif tablero[2] ==  tablero[5] == tablero[8] != "-":
-        ganador = tablero[2]
-def controlDiagonal():
-    global ganador
-    if tablero[0] ==  tablero[4] == tablero[8] != "-":
-        ganador = tablero[0]
-    elif tablero[2] ==  tablero[4] == tablero[6] != "-":
-        ganador = tablero[2]
-def jugada(valor):
-    anoto = False
-    while anoto==False:
-        posicion = int(input("Elegi una posicion del 1 al 9: "))
-        posicion -= 1
-        if tablero[posicion] == "-":
-            anoto = True
-        else:
-            print("Esa posicion ya esta ocupada")
-    tablero[posicion] = valor
-    ver_tablero()
+    if(Cx==0 and Cy==1):
+        oled.text("! !", 15, 35, 10)
+        K=4
+    else:
+        oled.text(" ", 15, 35, 10)
 
+    if(Cx==1 and Cy==1):
+        oled.text("! !", 50, 35, 1)
+        K=5
+    else:
+        oled.text(" ", 50, 35, 1)
+
+    if(Cx==2 and Cy==1):
+        oled.text("! !", 88, 35, 10)
+        K=6
+    else:
+        oled.text(" ", 88, 27, 10)
+    
+    if(Cx==0 and Cy==2):
+        oled.text("! !", 17, 51, 10)
+        K=7
+    else:
+        oled.text(" ", 17, 51, 10)
+    
+    if(Cx==1 and Cy==2):
+        oled.text("! !", 49, 52, 10)
+        K=8
+    else:
+        oled.text(" ", 49, 52, 10)
+        
+    if(Cx==2 and Cy==2):
+        oled.text("! !", 88, 51, 10)
+        K=9
+    else:
+        oled.text(" ", 88, 51, 10)
+
+matriz=[[2,2,2],[2,2,2],[2,2,2]]
+matriztxt=[["","",""],["","",""],["","",""]]
+
+def ponerXyO(K, click,turno):
+  
+  contador= turno
+
+  if(turno==0):
+    
+
+    
+    if(click==1 and matriz[0][0]==2):
+        matriz[0][0]=1
+        matriztxt[0][0]="x"
+        contador=not contador
+    if(click==2 and matriz[0][1]==2):
+        matriz[0][1]=1
+        matriztxt[0][1]="x"
+        contador=not contador
+    if(click==3 and matriz[0][2]==2):
+        matriz[0][2]=1
+        matriztxt[0][2]="x"
+        contador=not contador
+    if(click==4 and matriz[1][0]==2):
+        matriz[1][0]=1
+        matriztxt[1][0]="x"
+        contador=not contador
+    if(click==5 and matriz[1][1]==2):
+        matriz[1][1]=1
+        matriztxt[1][1]="x"
+        contador=not contador
+    if(click==6 and matriz[1][2]==2):
+        matriz[1][2]=1
+        matriztxt[1][2]="x"
+        contador=not contador
+    if(click==7 and matriz[2][0]==2):
+        matriz[2][0]=1
+        matriztxt[2][0]="x"
+        contador=not contador
+    if(click==8 and matriz[2][1]==2):
+        matriz[2][1]=1
+        matriztxt[2][1]="x"
+        contador=not contador
+    if(click==9 and matriz[2][2]==2):
+        matriz[2][2]=1
+        matriztxt[2][2]="x"
+        contador=not contador
+            
+                    
+
+  else:
+    
+    if(click==1 and matriz[0][0]==2):
+      matriz[0][0]=0
+      matriztxt[0][0]="o"
+      contador=not contador
+    if(click==2 and matriz[0][1]==2):
+      matriz[0][1]=0
+      matriztxt[0][1]="o"
+      contador=not contador
+    if(click==3 and matriz[0][2]==2):
+      matriz[0][2]=0
+      matriztxt[0][2]="o"
+      contador=not contador
+    if(click==4 and matriz[1][0]==2):
+      matriz[1][0]=0
+      matriztxt[1][0]="o"
+      contador=not contador
+    if(click==5 and matriz[1][1]==2):
+      matriz[1][1]=0
+      matriztxt[1][1]="o"
+      contador=not contador
+    if(click==6 and matriz[1][2]==2):
+      matriz[1][2]=0
+      matriztxt[1][2]="o"
+      contador=not contador
+    if(click==7 and matriz[2][0]==2):
+      matriz[2][0]=0
+      matriztxt[2][0]="o"
+      contador=not contador
+    if(click==8 and matriz[2][1]==2):
+      matriz[2][1]=0
+      matriztxt[2][1]="o"
+      contador=not contador
+    if(click==9 and matriz[2][2]==2):
+      matriz[2][2]=0
+      matriztxt[2][2]="o"
+      contador=not contador
+            
+   
+   
+  oled.text(matriztxt[0][0], 23, 15, 1)
+  oled.text(matriztxt[0][1], 58, 15, 1)
+  oled.text(matriztxt[0][2], 93, 15, 1) 
+
+  oled.text(matriztxt[1][0], 23, 34, 1)
+  oled.text(matriztxt[1][1], 59, 34, 1)
+  oled.text(matriztxt[1][2], 95, 34, 1)       
+
+  oled.text(matriztxt[2][0], 25, 51, 10)
+  oled.text(matriztxt[2][1], 58, 52, 10)
+  oled.text(matriztxt[2][2], 95, 51, 10)
+
+  return contador
+def refrescar (oled):
+   
+    seleccionar(Cx, Cy, K)
+
+
+    oled.show()
+
+def Comprobar_partida():
+
+  victoria=False
+
+  for i in range(len(matriz)):
+    if matriz[i][0]!=2 and matriz[i][1]!=2 and matriz[i][2]!=2 and (matriz[i][0]==matriz[i][1] and matriz[i][1]==matriz[i][2]):
+      if matriz[i][0]==0:
+        return 0
+      else:
+        return 1
+        victoria=True
+  for i in range(len(matriz[0])):
+    if matriz[0][i]!=2 and matriz[1][i]!=2 and matriz[2][i]!=2 and (matriz[0][i]==matriz[1][i] and matriz[1][0]==matriz[2][i]):
+      if matriz[0][i]==0:
+        return 0
+        victoria=True
+      else:
+        return 1
+        victoria=True
+  if matriz[1][1]!=2 and ((matriz[0][0]==matriz[1][1] and matriz[1][1]==matriz[2][2]) or (matriz[0][2]==matriz[1][1] and matriz[1][1]==matriz[2][0])):
+    if matriz[1][1]==0:
+      return 0
+      victoria=True
+    else:
+      return 1
+      victoria=True
+
+  empate=True
+  
+  for i in range(len(matriz)):
+    for j in range(len(matriz[0])):
+      if matriz[i][j]==2:
+        empate=False
+  
+  if empate==True and victoria==False:
+    return 2
+
+  return 3
+def vaciar_matrices():
+  for i in range(len(matriz)):
+    for j in range(len(matriz[i])):
+      matriz[i][j]=2
+      matriztxt[i][j]=""
+
+contador=0
+end=False
 
 while True:
 
+  estado=Comprobar_partida()
 
-  quedaEscrito = a
-
-  while b==0:
-
-    led.value(boton.value())
-
-    x=sensorx.read()
-    y=sensory.read()
-    #oled.fill(1)
-    oled.text("TRIQUI", 41, 00,color)
-
-    #verticales
-    oled.line(42,10,42,64,1)
-    oled.line(85,10,85,64,1)
-    
-    #Horizontales
-    oled.line(0,47,128,47,1)
-    oled.line(0,27,128,27,1)
-
-    #x
-    #oled.line(0,10,38,25,1)
-    #led.line(0,25,38,10,1)
-
-    equis = oled.text("X", movimientoX, movimientoY,color)
-
-  #Izquierda
-    if x>3600:
-      movimientoX = movimientoX-44 
-      if movimientoX<16:
-        movimientoX=16
-          
-      oled.text("X", movimientoX, movimientoY,color)
-  #Derecha
-    elif x<150:
-      movimientoX = movimientoX+44 
-      if movimientoX>104:
-        movimientoX=104
-
-      oled.text("X", movimientoX, movimientoY,color)
-
-  #Arriba
-    if y>3600:
-      movimientoY = movimientoY-20 
-      if movimientoY<15:
-        movimientoY=15
-          
-      oled.text("X", movimientoX, movimientoY,color)
-      
-  #Abajo    
-    elif y<150:
-      movimientoY = movimientoY+20
-      if movimientoY>56:
-        movimientoY=56
-
-      oled.text("X", movimientoX, movimientoY,color)
-    
-    
-    if boton.value()==0:
-      #modulo = modulo+1
-      oled.text("X", movimientoX, movimientoY,color)
-      a = oled.text("X", movimientoX, movimientoY,color)
-      b=1
-      
-      
-    oled.show()
-    sleep_ms(200)
-
-    #if modulo%2==0:
-    
+  if estado==0:
+    click=0
     oled.fill(0)
-
-
-
-  #while 2
-  while b==1:
-
-    led.value(boton.value())
-
-    x=sensorx.read()
-    y=sensory.read()
-    #oled.fill(1)
-    oled.text("TRIQUI", 41, 00,color)
-
-    #verticales
-    oled.line(42,10,42,64,1)
-    oled.line(85,10,85,64,1)
-    
-    #Horizontales
-    oled.line(0,47,128,47,1)
-    oled.line(0,27,128,27,1)
-
-    #x
-    #oled.line(0,10,38,25,1)
-    #led.line(0,25,38,10,1)
-
-    equis = oled.text("O", movimientoX, movimientoY,color)
-
-  #Izquierda
-    if x>3600:
-      movimientoX = movimientoX-44 
-      if movimientoX<16:
-        movimientoX=16
-          
-      oled.text("O", movimientoX, movimientoY,color)
-  #Derecha
-    elif x<150:
-      movimientoX = movimientoX+44 
-      if movimientoX>104:
-        movimientoX=104
-
-      oled.text("O", movimientoX, movimientoY,color)
-
-  #Arriba
-    if y>3600:
-      movimientoY = movimientoY-20 
-      if movimientoY<15:
-        movimientoY=15
-          
-      oled.text("O", movimientoX, movimientoY,color)
-      
-  #Abajo    
-    elif y<150:
-      movimientoY = movimientoY+20
-      if movimientoY>56:
-        movimientoY=56
-
-      oled.text("O", movimientoX, movimientoY,color)
-    
-    
-    if boton.value()==0:
-      modulo = modulo+1
-      oled.text("O", movimientoX, movimientoY,color)
-      a = oled.text("O", movimientoX, movimientoY,color)
-      b = 0
-      
+    vaciar_matrices()
+    oled.text("Jugador O",32, 27, 1)
+    oled.text("Ganaste!",37, 39, 1)
     oled.show()
-    sleep_ms(200)
-      
-    elif not boton.value():
-      oled.fill(0)
+    sleep(3)
+  if estado==1:
+    click=0
+    oled.fill(0)
+    vaciar_matrices()
+    oled.text("Jugador x",32, 27, 1)
+    oled.text("Ganaste!",37, 39, 1)
+    oled.show()
+    sleep(3)
+  if estado==2:
+    click=0
+    oled.fill(0)
+    vaciar_matrices()
+    oled.text("Empate",32, 27, 1)
+    oled.show()
+    sleep(3)
+  
+  oled.text("TRIQUI", 41, 00,1)
+  oled.line(42,15,42,64,1)
+  oled.line(84,15,84,64,1)
+  oled.line(110,30,18,30,1)
+  oled.line(110,47,18,47,1)
+  
+  tempx=ejex.read()
+  tempy=ejey.read()
+  
+  if(tempx==4095 and Cx!=2):
+      Cx=Cx+1
+      sleep_ms(200)
+  if(tempx==0 and Cx!=0):
+      Cx=Cx-1
+      sleep_ms(200)
+  if(tempy==4095 and Cy!=2):
+      Cy=Cy+1
+      sleep_ms(200)
+  if(tempy==0 and Cy!=0):
+      Cy=Cy-1
+      sleep_ms(200)
+
+  if(Cx==0 and Cy==0):
+      K=1
+  if(Cx==1 and Cy==0):
+      K=2
+  if(Cx==2 and Cy==0):
+      K=3
+  if(Cx==0 and Cy==1):
+      K=4
+  if(Cx==1 and Cy==1):
+      K=5
+  if(Cx==2 and Cy==1):
+      K=6
+  if(Cx==0 and Cy==2):
+      K=7
+  if(Cx==1 and Cy==2):
+      K=8
+  if(Cx==2 and Cy==2):
+      K=9
+  
+  if(not boton1.value()):
+      click=K
+      sleep_ms(200)
+
+  contador=ponerXyO(K, click, contador)
+  refrescar(oled)
+
+  oled.show()
+  oled.fill(0)
 
